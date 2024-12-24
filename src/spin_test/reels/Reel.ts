@@ -1,6 +1,6 @@
 import { Sprite } from "pixi.js";
 import { GameObject } from "../../util/GameObject";
-import { reelGap, symbolWidth } from "../../config/ReelsConfig";
+import { reelGap, symbolWidth } from "../../config/Constants";
 
 export class Reel extends GameObject {
 
@@ -11,7 +11,7 @@ export class Reel extends GameObject {
   }
     public init(): void {
       this.getRoot().x = this.index * (symbolWidth + reelGap);
-      const sp = Sprite.from("character_5");
+      const sp = Sprite.from("character_1");
       this.getRoot().addChild(sp);
     }
 
