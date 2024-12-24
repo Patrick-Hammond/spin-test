@@ -7,5 +7,8 @@ export abstract class GameObject {
     return this.root as Container;
   }
 
+  public addChild(child: GameObject): void {
+    this.root.addChild(child.getRoot());
+  }
   public abstract init(): void;
 }

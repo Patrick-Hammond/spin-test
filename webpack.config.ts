@@ -22,11 +22,6 @@ module.exports = (env: { mode: "development" | "production" }) => {
                 },
             ],
         },
-        optimization: {
-            splitChunks: {
-                chunks: "all",
-            },
-        },
 
         plugins: [
           new HtmlWebpackPlugin(),
