@@ -14,7 +14,7 @@ export class SpinTest extends GameObject {
     const spinButton = getButton(ImageKeys.SPIN_BUTTON);
     spinButton.on('pointerdown', () => reels.spin());
 
-    //add them to the display list
+    //add everything to the display list
     this.root.addChild(
       getSprite(ImageKeys.REELS_BACKGROUND),
       reels.getRoot(),

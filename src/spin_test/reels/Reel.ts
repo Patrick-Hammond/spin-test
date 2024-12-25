@@ -1,5 +1,5 @@
 import { Sprite, Ticker } from "pixi.js";
-import { reelGap, symbolHeight, symbolWidth } from "../../config/Constants";
+import { maxReelSpeed, reelGap, symbolHeight, symbolWidth } from "../../config/Constants";
 import { SymbolName } from "../../config/Symbols";
 import { getSymbolSprite, getSymbolTexture } from "../../util/AssetFactory";
 import { GameObject } from "../../util/GameObject";
@@ -9,7 +9,9 @@ enum ReelState {
   IDLE,
   STARTING,
   SPINNING,
-  STOPPING
+  STOPPING,
+  BOUNCE,
+  STOPPED
 }
 
 export class Reel extends GameObject {
@@ -17,11 +19,12 @@ export class Reel extends GameObject {
   private index: number = 0;
   private speed: number = 0.1;
   private progress: number = 0;
+  private onComplete: () => void = () => { };
   private symbolSprites: Sprite[] = [];
   private state: ReelState = ReelState.IDLE;
   constructor(
-    private reelIndex: number, 
-    private reelStrip: SymbolName[]){
+    private reelIndex: number,
+    private reelStrip: SymbolName[]) {
     super();
   }
   public init(): void {
@@ -43,14 +46,18 @@ export class Reel extends GameObject {
     Ticker.shared.add(this.update, this);
   }
 
-  public stop(): void {
-
+  public async stop(landingSymbols:SymbolName[]): Promise<void> {
+    return new Promise<void>((resolve) => {
+      this.onComplete = resolve;
+      this.progress = 0;
+      this.state = ReelState.STOPPING;
+    });
   }
 
   private update(ticker: Ticker): void {
     switch (this.state) {
       case ReelState.STARTING:
-        this.windUpReel(ticker);
+        this.startReel(ticker);
         break;
       case ReelState.SPINNING:
         this.spinReel(ticker);
@@ -58,10 +65,31 @@ export class Reel extends GameObject {
       case ReelState.STOPPING:
         this.stopReel(ticker);
         break;
+      case ReelState.BOUNCE:
+        this.bounceReel(ticker);
+        break;
     }
   }
 
-  private windUpReel(ticker: Ticker): void {
+  private moveSymbols(ticker: Ticker): void {
+    this.symbolSprites.forEach((symbolSprite) => {
+
+      //move the symbol down
+      symbolSprite.y += ticker.deltaMS * this.speed;
+
+      //if the symbol is off the bottom of the screen, move it to the top
+      if (symbolSprite.y > 7 * symbolHeight) {
+        const excess = symbolSprite.y - 7 * symbolHeight;
+        symbolSprite.y = -symbolHeight + excess;
+
+        //change the symbol according to the reel strip
+        if (--this.index < 0) this.index = this.reelStrip.length - 1;
+        (symbolSprite as Sprite).texture = getSymbolTexture(this.reelStrip[this.index], this.speed > 3);
+      }
+    });
+  }
+
+  private startReel(ticker: Ticker): void {
     this.progress += ticker.deltaMS * 0.01;
     this.getRoot().y = lerp(0, -60, this.progress);
     if (this.progress >= 1) {
@@ -70,26 +98,31 @@ export class Reel extends GameObject {
   }
 
   private spinReel(ticker: Ticker): void {
-    this.symbolSprites.forEach((symbolSprite) => {
-      //move the symbol down
-      symbolSprite.y += ticker.deltaMS * this.speed;
-      //accelerate
-      if (this.speed < 10) this.speed += 0.05;
-
-      //if the symbol is off the bottom of the screen, move it to the top
-      if (symbolSprite.y > 7 * symbolHeight) {
-        symbolSprite.y = -symbolHeight;
-        //change the symbol according to the reel strip
-        if (--this.index < 0) this.index = this.reelStrip.length - 1;
-        (symbolSprite as Sprite).texture = getSymbolTexture(this.reelStrip[this.index], this.speed > 3);
-      }
-    });
+    this.moveSymbols(ticker);
+    if (this.speed < maxReelSpeed) { //accelerate the reel
+      this.speed += ticker.deltaMS * 0.016;
+    } else {
+      this.speed = maxReelSpeed;
+    }
   }
+
   private stopReel(ticker: Ticker): void {
+    this.moveSymbols(ticker);
+    if (this.speed > 0) { //deccelerate the reel
+      this.speed -= ticker.deltaMS * 0.05;
+    } else {
+      this.getRoot().y = 0;
+      this.state = ReelState.STOPPED;
+      this.onComplete();
+      //this.state = ReelState.BOUNCE;
+    }
+  }
+  private bounceReel(ticker: Ticker): void {
     this.progress += ticker.deltaMS * 0.005;
     this.getRoot().y = lerp(0, 80, this.progress);
     if (this.progress >= 1) {
-      this.state = ReelState.SPINNING;
+      this.state = ReelState.STOPPED;
+      this.onComplete();
     }
   }
 }
