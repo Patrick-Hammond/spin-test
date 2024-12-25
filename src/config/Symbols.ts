@@ -45,7 +45,7 @@ export function createReelStrip(length: number): SymbolName[] {
 export function createStopResult(): SymbolName[][] {
   const result: SymbolName[][] = [];
   for (let i = 0; i < 5; i++) {
-    result.push(createReelStrip(8));
+    result.push([SymbolName.SYMBOL_EMPTY, SymbolName.SYMBOL_EMPTY, ...createReelStrip(3)]);
   }
   return result;
 }

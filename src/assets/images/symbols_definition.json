@@ -459,7 +459,27 @@
                 "w": 1,
                 "h": 1
             }
-        }         
+        },
+        "symbol_empty_blurred": {
+            "frame": {
+                "x": 0,
+                "y": 800,
+                "w": 1,
+                "h": 1
+            },
+            "rotated": false,
+            "trimmed": false,
+            "spriteSourceSize": {
+                "x": 0,
+                "y": 0,
+                "w": 1,
+                "h": 1
+            },
+            "sourceSize": {
+                "w": 1,
+                "h": 1
+            }
+        }           
     },
     "meta": {
         "app": "https://www.codeandweb.com/texturepacker",

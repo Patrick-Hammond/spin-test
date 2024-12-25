@@ -22,14 +22,15 @@ export class Reel extends GameObject {
   private onComplete: () => void = () => { };
   private symbolSprites: Sprite[] = [];
   private state: ReelState = ReelState.IDLE;
+  private landingSymbols: SymbolName[] = [];
   constructor(
     private reelIndex: number,
     private reelStrip: SymbolName[]) {
     super();
   }
   public init(): void {
-    //create a strip of 8 symbols (1 above and 3 below the visible area)
-    for (let i = 0; i < 8; i++) {
+    //create a strip of 7 symbols (1 above and 3 below the visible area)
+    for (let i = 0; i < 7; i++) {
       const symbolSprite = getSymbolSprite(this.reelStrip[i]);
       symbolSprite.y = (i - 1) * symbolHeight;
       this.symbolSprites.push(symbolSprite);
@@ -46,12 +47,12 @@ export class Reel extends GameObject {
     Ticker.shared.add(this.update, this);
   }
 
-  public async stop(landingSymbols:SymbolName[]): Promise<void> {
-    return new Promise<void>((resolve) => {
-      this.onComplete = resolve;
-      this.progress = 0;
-      this.state = ReelState.STOPPING;
-    });
+  public async stop(landingSymbols: SymbolName[]): Promise<void> {
+    console.log("landingSymbols", landingSymbols);
+    this.landingSymbols = [...landingSymbols];
+    this.progress = 0;
+    this.state = ReelState.STOPPING;
+    return new Promise<void>(resolve => this.onComplete = resolve);
   }
 
   private update(ticker: Ticker): void {
@@ -78,15 +79,31 @@ export class Reel extends GameObject {
       symbolSprite.y += ticker.deltaMS * this.speed;
 
       //if the symbol is off the bottom of the screen, move it to the top
-      if (symbolSprite.y > 7 * symbolHeight) {
-        const excess = symbolSprite.y - 7 * symbolHeight;
-        symbolSprite.y = -symbolHeight + excess;
+      if (symbolSprite.y >= 6 * symbolHeight) {
+        symbolSprite.y -= 7 * symbolHeight;
 
-        //change the symbol according to the reel strip
-        if (--this.index < 0) this.index = this.reelStrip.length - 1;
-        (symbolSprite as Sprite).texture = getSymbolTexture(this.reelStrip[this.index], this.speed > 3);
+        this.updateSymbolTexture(symbolSprite);
       }
     });
+  }
+
+  private updateSymbolTexture(symbolSprite: Sprite): void {
+    switch (this.state) {
+      case ReelState.SPINNING:
+        // Change the symbol according to the reel strip
+        if (--this.index < 0) this.index = this.reelStrip.length - 1;
+        symbolSprite.texture = getSymbolTexture(this.reelStrip[this.index], this.speed > 3);
+        break;
+      case ReelState.STOPPING:
+        // Change the symbol according to the landing symbols
+        symbolSprite.texture = getSymbolTexture(this.landingSymbols.pop() as SymbolName, false);
+        if (this.landingSymbols.length === 0) {
+          this.getRoot().y = 0;
+          this.state = ReelState.STOPPED;
+          this.onComplete();
+        }
+        break;
+    }
   }
 
   private startReel(ticker: Ticker): void {
@@ -99,7 +116,8 @@ export class Reel extends GameObject {
 
   private spinReel(ticker: Ticker): void {
     this.moveSymbols(ticker);
-    if (this.speed < maxReelSpeed) { //accelerate the reel
+    //accelerate the reel
+    if (this.speed < maxReelSpeed) {
       this.speed += ticker.deltaMS * 0.016;
     } else {
       this.speed = maxReelSpeed;
@@ -108,15 +126,15 @@ export class Reel extends GameObject {
 
   private stopReel(ticker: Ticker): void {
     this.moveSymbols(ticker);
-    if (this.speed > 0) { //deccelerate the reel
+    //deccelerate the reel
+    if (this.speed > 1) {
       this.speed -= ticker.deltaMS * 0.05;
     } else {
-      this.getRoot().y = 0;
-      this.state = ReelState.STOPPED;
-      this.onComplete();
-      //this.state = ReelState.BOUNCE;
+      this.speed = 1;
     }
   }
+
+
   private bounceReel(ticker: Ticker): void {
     this.progress += ticker.deltaMS * 0.005;
     this.getRoot().y = lerp(0, 80, this.progress);
