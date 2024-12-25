@@ -7,8 +7,8 @@ import { Reel } from "./Reel";
 export class Reels extends GameObject {
   private reels: Reel[] = [];
   private isSpinning: boolean = false;
-
-  constructor(private reelCount: number) {
+  constructor(
+    private reelCount: number) {
     super();
   }
 
