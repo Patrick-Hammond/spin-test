@@ -34,7 +34,7 @@ export class Reels extends GameObject {
       this.state = ReelsState.SPINNING;
       getSound(SoundKeys.UI_SPIN_BUTTON).play();
       this.reels.forEach(reel => reel.spin());
-      setTimeout(() => this.stop(createStopResult()), 4000);
+      setTimeout(() => this.stop(createStopResult()), 2500);
     }
   }
 
