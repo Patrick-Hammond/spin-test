@@ -1,4 +1,4 @@
-import { Sprite, Ticker } from "pixi.js";
+import { Container, Sprite, Texture, TextureSource, Ticker } from "pixi.js";
 import { maxReelSpeed, reelGap, symbolHeight, symbolWidth } from "../../config/Constants";
 import { SymbolName } from "../../config/Symbols";
 import { getSymbolSprite, getSymbolTexture } from "../../util/AssetFactory";
@@ -21,6 +21,7 @@ export class Reel extends GameObject {
   private progress: number = 0;
   private onComplete: () => void = () => { };
   private symbolSprites: Sprite[] = [];
+  private reel: Container = new Container();
   private state: ReelState = ReelState.IDLE;
   private landingSymbols: SymbolName[] = [];
   constructor(
@@ -32,12 +33,13 @@ export class Reel extends GameObject {
     //create a strip of 7 symbols (1 above and 3 below the visible area)
     for (let i = 0; i < 7; i++) {
       const symbolSprite = getSymbolSprite(this.reelStrip[i]);
-      symbolSprite.y = (i - 1) * symbolHeight;
+      symbolSprite.y = i * symbolHeight;
       this.symbolSprites.push(symbolSprite);
     }
-    this.getRoot().addChild(...this.symbolSprites);
+    this.reel.addChild(...this.symbolSprites);
 
-    this.getRoot().x = this.reelIndex * (symbolWidth + reelGap);
+    this.getRoot().addChild(this.reel);
+    this.getRoot().position.set(this.reelIndex * (symbolWidth + reelGap), -symbolHeight);
   }
 
   public spin(): void {
@@ -48,8 +50,7 @@ export class Reel extends GameObject {
   }
 
   public async stop(landingSymbols: SymbolName[]): Promise<void> {
-    console.log("landingSymbols", landingSymbols);
-    this.landingSymbols = [...landingSymbols];
+    this.landingSymbols = landingSymbols;
     this.progress = 0;
     this.state = ReelState.STOPPING;
     return new Promise<void>(resolve => this.onComplete = resolve);
@@ -72,19 +73,16 @@ export class Reel extends GameObject {
     }
   }
 
-  private moveSymbols(ticker: Ticker): void {
-    this.symbolSprites.forEach((symbolSprite) => {
+  private moveReel(ticker: Ticker): void {
+      this.reel.y += ticker.deltaMS * this.speed;
 
-      //move the symbol down
-      symbolSprite.y += ticker.deltaMS * this.speed;
-
-      //if the symbol is off the bottom of the screen, move it to the top
-      if (symbolSprite.y >= 6 * symbolHeight) {
-        symbolSprite.y -= 7 * symbolHeight;
-
-        this.updateSymbolTexture(symbolSprite);
+      if (this.reel.y >= symbolHeight) {
+        this.reel.y = 0;
+        for (let i = this.symbolSprites.length - 1; i > 0; i--) {
+          this.symbolSprites[i].texture = this.symbolSprites[i-1].texture;
+        }
+        this.updateSymbolTexture(this.symbolSprites[0]);
       }
-    });
   }
 
   private updateSymbolTexture(symbolSprite: Sprite): void {
@@ -98,8 +96,8 @@ export class Reel extends GameObject {
         // Change the symbol according to the landing symbols
         symbolSprite.texture = getSymbolTexture(this.landingSymbols.pop() as SymbolName, false);
         if (this.landingSymbols.length === 0) {
-          this.getRoot().y = 0;
           this.state = ReelState.STOPPED;
+          Ticker.shared.remove(this.update, this);
           this.onComplete();
         }
         break;
@@ -107,15 +105,15 @@ export class Reel extends GameObject {
   }
 
   private startReel(ticker: Ticker): void {
-    this.progress += ticker.deltaMS * 0.01;
-    this.getRoot().y = lerp(0, -60, this.progress);
+    this.progress += ticker.deltaMS * 0.025;
+    this.reel.y = lerp(0, -60, this.progress);
     if (this.progress >= 1) {
       this.state = ReelState.SPINNING;
     }
   }
 
   private spinReel(ticker: Ticker): void {
-    this.moveSymbols(ticker);
+    this.moveReel(ticker);
     //accelerate the reel
     if (this.speed < maxReelSpeed) {
       this.speed += ticker.deltaMS * 0.016;
@@ -125,16 +123,14 @@ export class Reel extends GameObject {
   }
 
   private stopReel(ticker: Ticker): void {
-    this.moveSymbols(ticker);
+    this.moveReel(ticker);
     //deccelerate the reel
     if (this.speed > 1) {
-      this.speed -= ticker.deltaMS * 0.05;
+      this.speed -= ticker.deltaMS * 0.03;
     } else {
       this.speed = 1;
     }
   }
-
-
   private bounceReel(ticker: Ticker): void {
     this.progress += ticker.deltaMS * 0.005;
     this.getRoot().y = lerp(0, 80, this.progress);
