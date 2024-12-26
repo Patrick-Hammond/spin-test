@@ -50,7 +50,8 @@ export class Reel extends GameObject {
   }
 
   public async stop(landingSymbols: SymbolName[]): Promise<void> {
-    this.landingSymbols = landingSymbols;
+    this.landingSymbols = [SymbolName.SYMBOL_EMPTY, ...landingSymbols, SymbolName.SYMBOL_EMPTY, SymbolName.SYMBOL_EMPTY, SymbolName.SYMBOL_EMPTY];
+    this.logLandingSymbols(landingSymbols);
     this.progress = 0;
     this.state = ReelState.STOPPING;
     return new Promise<void>(resolve => this.onComplete = resolve);
@@ -78,9 +79,6 @@ export class Reel extends GameObject {
 
       if (this.reel.y >= symbolHeight) {
         this.reel.y = 0;
-        for (let i = this.symbolSprites.length - 1; i > 0; i--) {
-          this.symbolSprites[i].texture = this.symbolSprites[i-1].texture;
-        }
         this.updateSymbolTexture(this.symbolSprites[0]);
       }
   }
@@ -89,12 +87,15 @@ export class Reel extends GameObject {
     switch (this.state) {
       case ReelState.SPINNING:
         // Change the symbol according to the reel strip
+        this.moveSymbolTextures();
         if (--this.index < 0) this.index = this.reelStrip.length - 1;
         symbolSprite.texture = getSymbolTexture(this.reelStrip[this.index], this.speed > 3);
         break;
+
       case ReelState.STOPPING:
         // Change the symbol according to the landing symbols
         symbolSprite.texture = getSymbolTexture(this.landingSymbols.pop() as SymbolName, false);
+        this.moveSymbolTextures();
         if (this.landingSymbols.length === 0) {
           this.state = ReelState.STOPPED;
           Ticker.shared.remove(this.update, this);
@@ -104,6 +105,11 @@ export class Reel extends GameObject {
     }
   }
 
+  private moveSymbolTextures(): void {
+    for (let i = this.symbolSprites.length - 1; i > 0; i--) {
+      this.symbolSprites[i].texture = this.symbolSprites[i-1].texture;
+    }
+  }
   private startReel(ticker: Ticker): void {
     this.progress += ticker.deltaMS * 0.025;
     this.reel.y = lerp(0, -60, this.progress);
@@ -138,5 +144,10 @@ export class Reel extends GameObject {
       this.state = ReelState.STOPPED;
       this.onComplete();
     }
+  }
+
+  private logLandingSymbols(landingSymbols: string[]): void {
+    landingSymbols = landingSymbols.map(symbol => symbol === SymbolName.SYMBOL_EMPTY ? "" : symbol);
+    console.log(`Reel ${this.reelIndex} landing symbols: ${landingSymbols.join(", ")}`);
   }
 }
