@@ -2,6 +2,7 @@ import { Application, Assets } from 'pixi.js';
 import { getAllImageFilenames, spritesheet } from './config/ImagesConfig';
 import { getAllSoundFilenames } from './config/SoundsConfig';
 import { SpinTest } from './spin_test/SpinTest';
+import { fillTextureCache } from './util/AssetFactory';
  
 
 (async () => {
@@ -18,6 +19,7 @@ import { SpinTest } from './spin_test/SpinTest';
     ...getAllSoundFilenames(),
     spritesheet
   ]);
+  fillTextureCache();
 
   //start the game
   const spinTest = new SpinTest();

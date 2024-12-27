@@ -1,15 +1,15 @@
 
 import { Sound } from "@pixi/sound";
-import { Sprite, Texture } from "pixi.js";
-import { ImageKeys, getImageFilename } from "../config/ImagesConfig";
+import { Assets, Sprite, Texture } from "pixi.js";
+import { ImageKeys, getAllImageFilenames, getImageFilename } from "../config/ImagesConfig";
 import { SoundKeys, getSoundFilename } from "../config/SoundsConfig";
-import { SymbolName } from "../config/Symbols";
+import { SymbolName, SymbolNames } from "../config/Symbols";
 
 export function getSprite(name: ImageKeys): Sprite {
   return Sprite.from(getImageFilename(name));
 }
 
-export function getSpinButton(clickCallback:()=>void): Sprite {
+export function getSpinButton(clickCallback: () => void): Sprite {
   //quick and dirty button
   const button = getSprite(ImageKeys.SPIN_BUTTON);
   button.anchor.set(0.5);
@@ -35,6 +35,11 @@ export function getSymbolSprite(name: SymbolName): Sprite {
   const symbolSprite = Sprite.from(name);
   symbolSprite.anchor.set(0, 1);
   return symbolSprite;
+}
+
+export function fillTextureCache(): void {
+  SymbolNames.forEach(name => getSymbolTexture(name, false));
+  SymbolNames.forEach(name => getSymbolTexture(name, true));
 }
 
 export function getSymbolTexture(name: SymbolName, blur: boolean = false): Texture {
