@@ -1,6 +1,4 @@
-import { SoundKeys } from "../../config/SoundsConfig";
 import { SymbolName, createReelStrip, createStopResult } from "../../config/Symbols";
-import { getSound } from "../../util/AssetFactory";
 import { GameObject } from "../../util/GameObject";
 import { Reel } from "./Reel";
 
@@ -19,8 +17,10 @@ export class Reels extends GameObject {
   }
 
   public init() {
+    //create all reels with random reel symbols
     for (let i = 0; i < this.reelCount; i++) {
-      const reel = new Reel(i, createReelStrip(80));
+      const reelStrip: SymbolName[] = [];
+      const reel = new Reel(i, createReelStrip(reelStrip, 80));
       this.reels.push(reel);
       this.addChild(reel);
       reel.init();
@@ -31,25 +31,24 @@ export class Reels extends GameObject {
 
   public spin(): void {
     if (this.state === ReelsState.IDLE) {
+
+      //spin all
       this.state = ReelsState.SPINNING;
-      getSound(SoundKeys.UI_SPIN_BUTTON).play();
       this.reels.forEach(reel => reel.spin());
-      setTimeout(() => this.stop(createStopResult()), 2500);
+
+      //for the purposes of this demo, let's just stop the
+      //reels after a fixed duration
+      setTimeout(() => this.stop(createStopResult()), 3000);
     }
   }
 
   public async stop(spinResult: SymbolName[][]): Promise<void> {
-    const stopPromises = this.reels.map((reel, index) => {
-      return new Promise<void>((resolve) => {
-        setTimeout(async () => {
-          await reel.stop(spinResult[index]);
-          resolve();
-        }, index * 300);
-      });
-    });
 
+    const stopPromises =
+      this.reels.map((reel, index) => reel.stop(spinResult[index], index * 200));
     await Promise.all(stopPromises);
+
+    //wait for all reels to stop
     this.state = ReelsState.IDLE;
   }
-
 }
