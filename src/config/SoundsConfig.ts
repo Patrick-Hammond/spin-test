@@ -13,7 +13,7 @@ export function getAllSoundFilenames(): string[] {
 }
 
 const sounds: Record<SoundKeys, string> = {
-  [SoundKeys.MAIN_GAME_BACKGROUND]: "../assets/sounds/maingame_backgroundmusic.ogg",
-  [SoundKeys.REELS_STOP]: "../assets/sounds/reels_stop_1.ogg",
-  [SoundKeys.UI_SPIN_BUTTON]: "../assets/sounds/ui_spinbutton.ogg"
+  [SoundKeys.MAIN_GAME_BACKGROUND]: "assets/sounds/maingame_backgroundmusic.ogg",
+  [SoundKeys.REELS_STOP]: "assets/sounds/reels_stop_1.ogg",
+  [SoundKeys.UI_SPIN_BUTTON]: "assets/sounds/ui_spinbutton.ogg"
 };
