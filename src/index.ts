@@ -5,7 +5,7 @@ import { SpinTest } from './spin_test/SpinTest';
  
 
 (async () => {
-  
+
   //init pixi
   const app = new Application();
   await app.init({ background: '#1099bb', width:1475, height:807 });

@@ -99,6 +99,7 @@ module.exports = (env: { mode: "development" | "production" }) => {
       optimization: {
           minimize: true,
           minimizer: [new terser()],
+          splitChunks: false,
       },
   };
 
