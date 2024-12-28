@@ -53,8 +53,9 @@ export function createStopResult(): SymbolName[][] {
   for (let i = 0; i < 5; i++) {
     const reelSymbols: SymbolName[] = [];
 
-    // the landing symbols needs to be split,
-    // a random royal above the visible area
+    // the landing symbols needs to be split so we don't display partial special symbols
+    // (just an aesthetic choice)
+    // first, a random royal above the visible area
     // then the actual result, 3 random symbols, including specials and wilds
     // and under them, below the visible area, 3 more dummy royals
     addRoyals(reelSymbols, 1);

@@ -1,29 +1,23 @@
-import { Container, Sprite, Ticker } from "pixi.js";
-import { maxReelSpeed, reelGap, symbolHeight, symbolWidth } from "../../config/Constants";
+import { Container, Sprite } from "pixi.js";
+import { reelGap, symbolHeight, symbolWidth } from "../../config/Constants";
 import { SymbolName } from "../../config/Symbols";
-import { getSound, getSymbolSprite, getSymbolTexture } from "../../util/AssetFactory";
+import { getSymbolSprite, getSymbolTexture } from "../../util/AssetFactory";
 import { GameObject } from "../../util/GameObject";
-import { lerp, lerpExp } from "../../util/Math";
-import { SoundKeys } from "../../config/SoundsConfig";
-
-enum ReelState {
-  IDLE,
-  STARTING,
-  SPINNING,
-  STOPPING,
-  BOUNCE,
-  STOPPED
-}
+import { StateMachine } from "../../util/StateMachine";
+import { ReelState } from "./states/ReelState";
+import { ReelState4_Bouncing } from "./states/ReelState4_Bouncing";
+import { ReelState2_Spinning } from "./states/ReelState2_Spinning";
+import { ReelState1_Startup } from "./states/ReelState1_Startup";
+import { ReelState5_Idle } from "./states/ReelState5_Idle";
+import { ReelState3_Stopping } from "./states/ReelState3_Stopping";
 
 export class Reel extends GameObject {
   private reel: Container = new Container();
-  private state: ReelState = ReelState.IDLE;
+  private stateMachine: StateMachine<ReelState> = new StateMachine<ReelState>();
   private landingSymbols: SymbolName[] = [];
   private nextSymbolIndex: number = 0;
-  private speed: number = 0.1;
-  private time: number = 0;
   private symbolSprites: Sprite[] = [];
-  private onComplete: () => void = () => {};
+  private onComplete: () => void = () => { };
   constructor(
     private reelIndex: number,
     private reelStrip: SymbolName[]) {
@@ -42,118 +36,45 @@ export class Reel extends GameObject {
 
     this.getRoot().addChild(this.reel);
     this.getRoot().position.set(this.reelIndex * (symbolWidth + reelGap), -symbolHeight);
+
+    //setup states
+    this.stateMachine.setStates({
+      [ReelState.STARTING]: new ReelState1_Startup(this.reel),
+      [ReelState.SPINNING]: new ReelState2_Spinning(this.reel, (speed: number) => this.updateSymbolTexture(speed)),
+      [ReelState.STOPPING]: new ReelState3_Stopping(this.reel, () => this.updateLandingSymbolTexture()),
+      [ReelState.BOUNCE]:   new ReelState4_Bouncing(this.reel,   () => this.onComplete()),
+      [ReelState.IDLE]:  new ReelState5_Idle()
+    });
   }
 
   public spin(): void {
-    this.speed = 0;
-    this.time = 0;
-    this.state = ReelState.STARTING;
-    Ticker.shared.add(this.update, this);
+    this.stateMachine.changeState(ReelState.STARTING);
   }
 
   public stop(landingSymbols: SymbolName[], startDelayMS: number): Promise<void> {
     this.landingSymbols = landingSymbols;
     //this.logLandingSymbols(landingSymbols);
     setTimeout(() => {
-      this.time = 0;
-      this.state = ReelState.STOPPING;
+      this.stateMachine.changeState(ReelState.STOPPING);
     }, startDelayMS);
     return new Promise<void>(resolve => this.onComplete = resolve);
   }
 
-  private update(ticker: Ticker): void {
-    switch (this.state) {
-      case ReelState.STARTING:
-        this.startReel(ticker);
-        break;
-      case ReelState.SPINNING:
-        this.spinReel(ticker);
-        break;
-      case ReelState.STOPPING:
-        this.stopReel(ticker);
-        break;
-      case ReelState.BOUNCE:
-        this.bounceReel(ticker);
-        break;
-    }
+  private updateSymbolTexture(speed: number): void {
+    // Change the symbol according to the reel strip
+    // cascade the textures first and then set the first sprite's texture
+    this.cascadeSymbolTextures();
+    if (--this.nextSymbolIndex < 0) this.nextSymbolIndex = this.reelStrip.length - 1;
+    this.symbolSprites[0].texture = getSymbolTexture(this.reelStrip[this.nextSymbolIndex], speed > 3);
   }
 
-  private startReel(ticker: Ticker): void {
-    this.time += ticker.deltaMS * 0.009;
-    this.reel.y = lerpExp(0, -70, this.time);
-    if (this.time >= 1) {
-      this.state = ReelState.SPINNING;
-      if (this.reelIndex === 4) getSound(SoundKeys.UI_SPIN_BUTTON).play();
-    }
-  }
-
-  private spinReel(ticker: Ticker): void {
-    this.moveReel(ticker);
-    if (this.speed < maxReelSpeed) {
-      this.speed += ticker.deltaMS * 0.008;
-    } else {
-      this.speed = maxReelSpeed;
-    }
-  }
-
-  private stopReel(ticker: Ticker): void {
-    this.moveReel(ticker);
-    if (this.speed > 1) {
-      this.speed *= ticker.deltaMS * 0.95;
-    } else {
-      this.speed = 1;
-    }
-  }
-
-  private bounceReel(ticker: Ticker): void {
-    this.time += ticker.deltaMS * 0.02;
-    if (this.time <= 1) {
-      this.reel.y = lerp(0, 50, this.time);
-    } else {
-      this.reel.y = lerp(50, 0, this.time - 1);
-    }
-    if (this.time >= 2) {
-      this.onSpinCompleted();
-    }
-  }
-
-  private moveReel(ticker: Ticker): void {
-    // at first, I tried moving the symbol sprites rather the the whole reel
-    // but even after accounting for excess overrun, they would eventually drift in relative position
-    // also, i wanted to copy the original spin design from https://slotcatalog.com/en/slots/egyptian-marvel
-    // where the symbol position remain static as the reel spins
-    // I achieved this by moving the symbol's parent container and when it has moved a symbol height distance
-    // reset it back to the start and cascade all the symbol textures down
-    // lowering the Constants.maxReelSpeed value results in more traditional spinning
-    this.reel.y += ticker.deltaMS * this.speed;
-
-    if (this.reel.y >= symbolHeight) {
-      this.reel.y = 0;
-      this.updateSymbolTexture(this.symbolSprites[0]);
-    }
-  }
-
-  private updateSymbolTexture(symbolSprite: Sprite): void {
-    switch (this.state) {
-      case ReelState.SPINNING:
-        // Change the symbol according to the reel strip
-        // cascade the textures first and then set the first sprite's texture
-        this.cascadeSymbolTextures();
-        if (--this.nextSymbolIndex < 0) this.nextSymbolIndex = this.reelStrip.length - 1;
-        symbolSprite.texture = getSymbolTexture(this.reelStrip[this.nextSymbolIndex], this.speed > 3);
-        break;
-
-      case ReelState.STOPPING:
-        // Change the symbol according to the landing symbols
-        // in this case we want to cascade the textures AFTER updating top symbolSprite
-        symbolSprite.texture = getSymbolTexture(this.landingSymbols.pop() as SymbolName, false);
-        this.cascadeSymbolTextures();
-        if (this.landingSymbols.length === 0) {
-          this.time = 0;
-          this.state = ReelState.BOUNCE;
-          getSound(SoundKeys.REELS_STOP).play();
-        }
-        break;
+  private updateLandingSymbolTexture(): void {
+    // Change the symbol according to the landing symbols
+    // in this case we want to cascade the textures AFTER updating top symbolSprite
+    this.symbolSprites[0].texture = getSymbolTexture(this.landingSymbols.pop() as SymbolName, false);
+    this.cascadeSymbolTextures();
+    if (this.landingSymbols.length === 0) {
+      this.stateMachine.changeState(ReelState.BOUNCE);
     }
   }
 
@@ -164,13 +85,6 @@ export class Reel extends GameObject {
     }
   }
 
-  private onSpinCompleted(): void {
-    Ticker.shared.remove(this.update, this);
-    this.reel.y = 0;
-    this.state = ReelState.STOPPED;
-    this.onComplete();
-  }
-  
   private logLandingSymbols(landingSymbols: string[]): void {
     console.log(`Reel ${this.reelIndex} landing symbols: ${landingSymbols.slice(1, 4).join(", ")}`);
   }

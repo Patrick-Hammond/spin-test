@@ -3,5 +3,5 @@ export function lerp(start: number, end: number, t: number): number {
 }
 
 export function lerpExp(start: number, end: number, t: number): number {
-  return start + (end - start) * (1 - Math.pow(2, -10 * t));
+  return start + (end - start) * (1 - 2 ** (-10 * t));
 }

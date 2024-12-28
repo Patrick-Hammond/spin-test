@@ -1,7 +1,7 @@
 
 import { Sound } from "@pixi/sound";
-import { Assets, Sprite, Texture } from "pixi.js";
-import { ImageKeys, getAllImageFilenames, getImageFilename } from "../config/ImagesConfig";
+import { Sprite, Texture } from "pixi.js";
+import { ImageKeys, getImageFilename } from "../config/ImagesConfig";
 import { SoundKeys, getSoundFilename } from "../config/SoundsConfig";
 import { SymbolName, SymbolNames } from "../config/Symbols";
 
