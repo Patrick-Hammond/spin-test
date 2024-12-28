@@ -19,16 +19,16 @@ export abstract class AbstractState<T extends number> {
 }
 
 export class StateMachine<T extends number> {
-  private states: Record<T, AbstractState<T>> = {} as Record<T, AbstractState<T>>;
+  private readonly states: Record<T, AbstractState<T>> = {} as Record<T, AbstractState<T>>;
   private currentState: AbstractState<T> | null = null;
-  private ticker: Ticker = new Ticker();
+  private readonly ticker: Ticker = new Ticker();
 
   constructor() {
     this.ticker.add((ticker: Ticker) => this.update(ticker.deltaMS));
   }
 
   setStates(states: Record<T, AbstractState<T>>): void {
-    this.states = states;
+    Object.assign(this.states, states);
   }
 
   startUpdates(): void {
@@ -40,20 +40,17 @@ export class StateMachine<T extends number> {
   }
 
   changeState(newState: T): void {
-    if (this.currentState && this.currentState.exit) {
-      this.currentState.exit();
+    if (!this.states[newState]) {
+      throw new Error(`State ${newState} does not exist in the state machine`);
     }
+
+    this.currentState?.exit?.();
     this.currentState = this.states[newState];
     this.currentState.stateMachine = this;
-
-    if (this.currentState.enter) {
-      this.currentState.enter();
-    }
+    this.currentState.enter?.();
   }
 
   update(deltaTime: number): void {
-    if (this.currentState) {
-      this.currentState.update(deltaTime);
-    }
+    this.currentState?.update(deltaTime);
   }
 }
