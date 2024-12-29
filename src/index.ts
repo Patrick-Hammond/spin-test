@@ -1,6 +1,5 @@
 import { Application, Assets } from 'pixi.js';
-import { getAllImageFilenames, spritesheet } from './config/ImagesConfig';
-import { getAllSoundFilenames } from './config/SoundsConfig';
+import { getAllImageFilenames, getAllSoundFilenames, spritesheet } from './config/';
 import { SpinTest } from './spin_test/SpinTest';
 import { fillTextureCache } from './util/AssetFactory';
  
