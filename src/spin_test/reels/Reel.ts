@@ -1,15 +1,7 @@
-import { Container, Sprite } from "pixi.js";
-import { reelGap, symbolHeight, symbolWidth } from "../../config/Constants";
-import { SymbolName } from "../../config/Symbols";
-import { getSymbolSprite, getSymbolTexture } from "../../util/AssetFactory";
-import { GameObject } from "../../util/GameObject";
-import { StateMachine } from "../../util/StateMachine";
-import { ReelState } from "./states/ReelState";
-import { ReelState4_Bouncing } from "./states/ReelState4_Bouncing";
-import { ReelState2_Spinning } from "./states/ReelState2_Spinning";
-import { ReelState1_Startup } from "./states/ReelState1_Startup";
-import { ReelState5_Idle } from "./states/ReelState5_Idle";
-import { ReelState3_Stopping } from "./states/ReelState3_Stopping";
+import { Container, Sprite } from 'pixi.js';
+import { reelGap, symbolHeight, symbolWidth, SymbolName } from '../../config';
+import { getSymbolSprite, getSymbolTexture, GameObject, StateMachine } from '../../util';
+import { ReelState, ReelState1_Startup, ReelState2_Spinning, ReelState3_Stopping, ReelState4_Bouncing, ReelState5_Idle } from './states';
 
 export class Reel extends GameObject {
   private reel: Container = new Container();
