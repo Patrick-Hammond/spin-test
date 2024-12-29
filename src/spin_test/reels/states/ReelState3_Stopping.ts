@@ -1,8 +1,6 @@
 import { Container } from "pixi.js";
-import { maxReelSpeed, symbolHeight } from "../../../config/Constants";
-import { SoundKeys } from "../../../config/SoundsConfig";
-import { getSound } from "../../../util/AssetFactory";
-import { AbstractState } from "../../../util/StateMachine";
+import { SoundKeys, maxReelSpeed, symbolHeight } from "../../../config/";
+import { AbstractState, getSound } from "../../../util/";
 import { ReelState } from "./ReelState";
 
 export class ReelState3_Stopping extends AbstractState<ReelState> {
