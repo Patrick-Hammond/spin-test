@@ -1,9 +1,7 @@
 
 import { Sound } from "@pixi/sound";
 import { Sprite, Texture } from "pixi.js";
-import { ImageKeys, getImageFilename } from "../config/ImagesConfig";
-import { SoundKeys, getSoundFilename } from "../config/SoundsConfig";
-import { SymbolName, SymbolNames } from "../config/Symbols";
+import { ImageKeys, getImageFilename, SoundKeys, getSoundFilename, SymbolName, SymbolNames } from "../config/";
 
 export function getSprite(name: ImageKeys): Sprite {
   return Sprite.from(getImageFilename(name));
