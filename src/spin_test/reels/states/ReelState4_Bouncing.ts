@@ -1,6 +1,5 @@
 import { Container } from "pixi.js";
-import { lerp } from "../../../util/Math";
-import { AbstractState } from "../../../util/StateMachine";
+import { AbstractState, lerp } from "../../../util/";
 import { ReelState } from "./ReelState";
 
 export class ReelState4_Bouncing extends AbstractState<ReelState> {
