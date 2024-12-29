@@ -17,9 +17,9 @@ export abstract class AbstractState<T extends number> {
     return this._stateMachine;
   }
 
-  enter?(): void;
-  update(deltaTime: number): void;
-  exit?(): void;
+  enter?(): void {};
+  update(deltaTime: number): void {};
+  exit?(): void {};
 }
 
 /**
