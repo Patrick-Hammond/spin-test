@@ -1,7 +1,5 @@
-import { ImageKeys } from "../config/ImagesConfig";
-import { SoundKeys } from "../config/SoundsConfig";
-import { getSpinButton, getSound, getSprite } from "../util/AssetFactory";
-import { GameObject } from "../util/GameObject";
+import { ImageKeys, SoundKeys } from "../config/";
+import { getSpinButton, getSound, getSprite, GameObject } from "../util/";
 import { Reels } from "./reels/Reels";
 
 export class SpinTest extends GameObject {
